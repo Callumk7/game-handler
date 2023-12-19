@@ -20,6 +20,9 @@ export const games = pgTable("games", {
 	storyline: text("storyline"),
 	firstReleaseDate: timestamp("first_release_date"),
 	externalFollows: integer("external_follows"),
+	rating: integer("rating"),
+	aggregatedRating: integer("aggregated_rating"),
+	aggregatedRatingCount: integer("aggregated_rating_count"),
 });
 
 export const gamesRelations = relations(games, ({ one, many }) => ({
