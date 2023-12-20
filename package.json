@@ -7,7 +7,8 @@
     "drizzle-orm": "^0.28.6",
     "hono": "^3.11.7",
     "postgres": "^3.4.3",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "zodix": "^0.4.4"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20230914.0",

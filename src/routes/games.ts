@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { Bindings } from "../types/bindings";
 import { drizzleClient } from "../db";
 import { IGDBGame, IGDBGameSchema } from "../types/games";
 import {
@@ -11,11 +12,8 @@ import {
 	games,
 	screenshots,
 } from "../db/schema/games";
-import { uuidv4 } from "../util/generate-uuid";
-
-type Bindings = {
-	DATABASE_URL: string;
-};
+import { fetchGamesFromIGDB } from "../util/igdb-fetch";
+import { createDbInserts } from "../util/create-inserts";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -52,95 +50,42 @@ app.post("/", async (c) => {
 	// and return the invalid games in the response.
 
 	// Insert the valid games into the database.
-	const coverInsert: CoverInsert[] = [];
-	const artworkInsert: ArtworkInsert[] = [];
-	const screenshotInsert: ScreenshotInsert[] = [];
-	const gameInsert: GameInsert[] = validGames.map((game) => {
-		let gameInsert: GameInsert = {
-			id: `game_${uuidv4()}`,
-			title: game.name,
-			gameId: game.id,
-		};
+	const coverInserts: CoverInsert[] = [];
+	const artworkInserts: ArtworkInsert[] = [];
+	const screenshotInserts: ScreenshotInsert[] = [];
+	const gameInserts: GameInsert[] = [];
+	validGames.map((game) => {
+		const [gameInsert, coverInsert, artworkInsert, screenshotInsert] =
+			createDbInserts(game);
 
-		if (game.storyline) {
-			gameInsert.storyline = game.storyline;
-		}
-
-		if (game.follows) {
-			gameInsert.externalFollows = game.follows;
-		}
-
-		if (game.aggregated_rating) {
-			gameInsert.aggregatedRating = Math.floor(game.aggregated_rating);
-		}
-
-		if (game.aggregated_rating_count) {
-			gameInsert.aggregatedRatingCount = game.aggregated_rating_count;
-		}
-
-		if (game.rating) {
-			gameInsert.rating = Math.floor(game.rating);
-		}
-
-		if (game.first_release_date) {
-			gameInsert.firstReleaseDate = new Date(
-				game.first_release_date * 1000,
-			);
-		}
-
-		if (game.cover) {
-			coverInsert.push({
-				id: `cover_${uuidv4()}`,
-				gameId: game.id,
-				imageId: game.cover.image_id,
-			});
-		}
-
-		if (game.artworks) {
-			game.artworks.forEach((artwork) => {
-				artworkInsert.push({
-					id: `artwork_${uuidv4()}`,
-					gameId: game.id,
-					imageId: artwork.image_id,
-				});
-			});
-		}
-
-		if (game.screenshots) {
-			game.screenshots.forEach((screenshot) => {
-				screenshotInsert.push({
-					id: `screenshot_${uuidv4()}`,
-					gameId: game.id,
-					imageId: screenshot.image_id,
-				});
-			});
-		}
-
-		return gameInsert;
+		coverInserts.push(...coverInsert);
+		artworkInserts.push(...artworkInsert);
+		screenshotInserts.push(...screenshotInsert);
+		gameInserts.push(gameInsert);
 	});
 
 	const insertedGamesPromise = db
 		.insert(games)
-		.values(gameInsert)
-		.onConflictDoNothing()
+		.values(gameInserts)
+		.onConflictDoNothing({ target: games.gameId })
 		.returning();
 
 	const insertedCoversPromise = db
 		.insert(covers)
-		.values(coverInsert)
-		.onConflictDoNothing()
+		.values(coverInserts)
+		.onConflictDoNothing({ target: covers.imageId })
 		.returning();
 
 	const insertedArtworksPromise = db
 		.insert(artworks)
-		.values(artworkInsert)
-		.onConflictDoNothing()
+		.values(artworkInserts)
+		.onConflictDoNothing({ target: artworks.imageId })
 		.returning();
 
 	const insertedScreenshotsPromise = db
 		.insert(screenshots)
-		.values(screenshotInsert)
-		.onConflictDoNothing()
+		.values(screenshotInserts)
+		.onConflictDoNothing({ target: screenshots.imageId })
 		.returning();
 
 	// Wait for all the promises to resolve.
@@ -163,6 +108,88 @@ app.post("/", async (c) => {
 		insertedCovers,
 		insertedArtworks,
 		insertedScreenshots,
+	});
+});
+
+// This route is for getting all the data that we need from IGDB,
+// and saving it to our database.
+app.post("/:gameId", async (c) => {
+	const db = drizzleClient(c.env.DATABASE_URL);
+
+	const { gameId } = c.req.param();
+
+	const igdbGame = await fetchGamesFromIGDB(
+		c.env.IGDB_BASE_URL,
+		{
+			fields: "full",
+			filters: [`id = ${gameId}`],
+		},
+		undefined,
+		{
+			Authorization: `Bearer ${c.env.IGDB_BEARER_TOKEN}`,
+			"Client-ID": c.env.IGDB_CLIENT_ID,
+			"content-type": "text/plain",
+		},
+	);
+
+	console.log(igdbGame);
+	let validGame: IGDBGame;
+	try {
+		validGame = IGDBGameSchema.parse(igdbGame[0]);
+	} catch (e) {
+		console.error(e);
+		return c.json({ error: e }, 500);
+	}
+
+	const [gameInsert, coverInsert, artworkInsert, screenshotInsert] =
+		createDbInserts(validGame);
+
+	let promises: Promise<any>[] = [];
+	let gameInsertPromise: Promise<any>;
+	if (gameInsert) {
+		gameInsertPromise = db
+			.insert(games)
+			.values(gameInsert)
+			.onConflictDoNothing({ target: games.gameId })
+			.returning();
+		promises.push(gameInsertPromise);
+	}
+
+	let coverInsertPromise: Promise<any>;
+	if (coverInsert.length > 0) {
+		coverInsertPromise = db
+			.insert(covers)
+			.values(coverInsert)
+			.onConflictDoNothing({ target: covers.imageId })
+			.returning();
+		promises.push(coverInsertPromise);
+	}
+
+	let artworkInsertPromise: Promise<any>;
+	if (artworkInsert.length > 0) {
+		artworkInsertPromise = db
+			.insert(artworks)
+			.values(artworkInsert)
+			.onConflictDoNothing({ target: artworks.imageId })
+			.returning();
+		promises.push(artworkInsertPromise);
+	}
+
+	let screenshotInsertPromise: Promise<any>;
+	if (screenshotInsert.length > 0) {
+		screenshotInsertPromise = db
+			.insert(screenshots)
+			.values(screenshotInsert)
+			.onConflictDoNothing({ target: screenshots.imageId })
+			.returning();
+		promises.push(screenshotInsertPromise);
+	}
+
+	const results = await Promise.all(promises);
+	console.log(results);
+
+	return c.json({
+		results,
 	});
 });
 

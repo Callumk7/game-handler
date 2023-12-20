@@ -30,7 +30,7 @@ export const IGDBGameSchema = z.object({
 	cover: CoverType,
 	storyline: z.string().optional(),
 	screenshots: z.array(screenshotType).optional(),
-	artworks: z.array(artworkType),
+	artworks: z.array(artworkType).optional(),
 	follows: z.number().optional(),
 	rating: z.number().optional(),
 	aggregated_rating: z.number().optional(),

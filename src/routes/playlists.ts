@@ -2,10 +2,7 @@ import { Hono } from "hono";
 import { drizzleClient } from "../db";
 import { playlists } from "../db/schema/playlists";
 import { eq } from "drizzle-orm";
-
-type Bindings = {
-	DATABASE_URL: string;
-};
+import { Bindings } from "../types/bindings";
 
 const app = new Hono<{ Bindings: Bindings }>();
 

@@ -3,10 +3,7 @@ import { drizzleClient } from "../db";
 import { z } from "zod";
 import { covers } from "../db/schema/games";
 import { uuidv4 } from "../util/generate-uuid";
-
-type Bindings = {
-	DATABASE_URL: string;
-};
+import { Bindings } from "../types/bindings";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
