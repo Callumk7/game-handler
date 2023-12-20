@@ -1,7 +1,16 @@
 import { Hono } from "hono";
 import { drizzleClient } from "../db";
 import { IGDBGame, IGDBGameSchema } from "../types/games";
-import { GameInsert, games } from "../db/schema/games";
+import {
+	ArtworkInsert,
+	CoverInsert,
+	GameInsert,
+	ScreenshotInsert,
+	artworks,
+	covers,
+	games,
+	screenshots,
+} from "../db/schema/games";
 import { uuidv4 } from "../util/generate-uuid";
 
 type Bindings = {
@@ -43,6 +52,9 @@ app.post("/", async (c) => {
 	// and return the invalid games in the response.
 
 	// Insert the valid games into the database.
+	const coverInsert: CoverInsert[] = [];
+	const artworkInsert: ArtworkInsert[] = [];
+	const screenshotInsert: ScreenshotInsert[] = [];
 	const gameInsert: GameInsert[] = validGames.map((game) => {
 		let gameInsert: GameInsert = {
 			id: `game_${uuidv4()}`,
@@ -76,15 +88,82 @@ app.post("/", async (c) => {
 			);
 		}
 
+		if (game.cover) {
+			coverInsert.push({
+				id: `cover_${uuidv4()}`,
+				gameId: game.id,
+				imageId: game.cover.image_id,
+			});
+		}
+
+		if (game.artworks) {
+			game.artworks.forEach((artwork) => {
+				artworkInsert.push({
+					id: `artwork_${uuidv4()}`,
+					gameId: game.id,
+					imageId: artwork.image_id,
+				});
+			});
+		}
+
+		if (game.screenshots) {
+			game.screenshots.forEach((screenshot) => {
+				screenshotInsert.push({
+					id: `screenshot_${uuidv4()}`,
+					gameId: game.id,
+					imageId: screenshot.image_id,
+				});
+			});
+		}
+
 		return gameInsert;
 	});
 
-	const insertedGames = await db
+	const insertedGamesPromise = db
 		.insert(games)
 		.values(gameInsert)
 		.onConflictDoNothing()
 		.returning();
-	return c.json({ insertedGames, invalidGames });
+
+	const insertedCoversPromise = db
+		.insert(covers)
+		.values(coverInsert)
+		.onConflictDoNothing()
+		.returning();
+
+	const insertedArtworksPromise = db
+		.insert(artworks)
+		.values(artworkInsert)
+		.onConflictDoNothing()
+		.returning();
+
+	const insertedScreenshotsPromise = db
+		.insert(screenshots)
+		.values(screenshotInsert)
+		.onConflictDoNothing()
+		.returning();
+
+	// Wait for all the promises to resolve.
+	// TODO: Handle errors.
+	const [
+		insertedGames,
+		insertedCovers,
+		insertedArtworks,
+		insertedScreenshots,
+	] = await Promise.all([
+		insertedGamesPromise,
+		insertedCoversPromise,
+		insertedArtworksPromise,
+		insertedScreenshotsPromise,
+	]);
+
+	return c.json({
+		insertedGames,
+		invalidGames,
+		insertedCovers,
+		insertedArtworks,
+		insertedScreenshots,
+	});
 });
 
 export default app;

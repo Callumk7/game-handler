@@ -79,3 +79,12 @@ export const screenshotsRelations = relations(screenshots, ({ one }) => ({
 
 export type Game = typeof games.$inferSelect;
 export type GameInsert = typeof games.$inferInsert;
+
+export type Cover = typeof covers.$inferSelect;
+export type CoverInsert = typeof covers.$inferInsert;
+
+export type Artwork = typeof artworks.$inferSelect;
+export type ArtworkInsert = typeof artworks.$inferInsert;
+
+export type Screenshot = typeof screenshots.$inferSelect;
+export type ScreenshotInsert = typeof screenshots.$inferInsert;
