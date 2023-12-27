@@ -4,6 +4,8 @@ import { z } from "zod";
 import { covers } from "../db/schema/games";
 import { uuidv4 } from "../util/generate-uuid";
 import { Bindings } from "../types/bindings";
+import { fetchGamesFromIGDB } from "../util/igdb-fetch";
+import { IGDBGameSchema } from "../types/games";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -51,6 +53,36 @@ app.post("/", async (c) => {
 		console.error(e);
 		return c.json({ error: e }, 500);
 	}
+});
+
+app.post("/:gameId", async (c) => {
+	const db = drizzleClient(c.env.DATABASE_URL);
+
+	const { gameId } = c.req.param();
+
+	const igdbGame = await fetchGamesFromIGDB(
+		c.env.IGDB_BASE_URL,
+		{
+			fields: "full",
+			filters: [`id = ${gameId}`],
+		},
+		undefined,
+		{
+			Authorization: `Bearer ${c.env.IGDB_BEARER_TOKEN}`,
+			"Client-ID": c.env.IGDB_CLIENT_ID,
+			"content-type": "text/plain",
+		},
+	);
+
+	const validGame = IGDBGameSchema.parse(igdbGame[0]);
+	const coverPost = await db.insert(covers).values({
+		id: `cover_${uuidv4()}`,
+		gameId: Number(gameId),
+		imageId: validGame.cover.image_id,
+	});
+
+	console.log(coverPost);
+	return c.json(coverPost);
 });
 
 export default app;
