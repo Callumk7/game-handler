@@ -6,10 +6,14 @@ import {
 	ArtworkInsert,
 	CoverInsert,
 	GameInsert,
+	GenreInsert,
+	GenreToGameInsert,
 	ScreenshotInsert,
 	artworks,
 	covers,
 	games,
+	genres,
+	genresToGames,
 	screenshots,
 } from "../db/schema/games";
 import { fetchGamesFromIGDB } from "../util/igdb-fetch";
@@ -53,16 +57,28 @@ app.post("/", async (c) => {
 	const coverInserts: CoverInsert[] = [];
 	const artworkInserts: ArtworkInsert[] = [];
 	const screenshotInserts: ScreenshotInsert[] = [];
+	const genreInserts: GenreInsert[] = [];
+	const genreToGameInserts: GenreToGameInsert[] = [];
 	const gameInserts: GameInsert[] = [];
 	validGames.map((game) => {
-		const [gameInsert, coverInsert, artworkInsert, screenshotInsert] =
-			createDbInserts(game);
+		const [
+			gameInsert,
+			coverInsert,
+			artworkInsert,
+			screenshotInsert,
+			genreInsert,
+			genreToGameInsert,
+		] = createDbInserts(game);
 
 		coverInserts.push(...coverInsert);
 		artworkInserts.push(...artworkInsert);
 		screenshotInserts.push(...screenshotInsert);
 		gameInserts.push(gameInsert);
+		genreInserts.push(...genreInsert);
+		genreToGameInserts.push(...genreToGameInsert);
 	});
+
+	console.log(genreToGameInserts);
 
 	const insertedGamesPromise = db
 		.insert(games)
@@ -88,6 +104,17 @@ app.post("/", async (c) => {
 		.onConflictDoNothing({ target: screenshots.imageId })
 		.returning();
 
+	const insertedGenresPromise = db
+		.insert(genres)
+		.values(genreInserts)
+		.onConflictDoNothing({ target: genres.id })
+		.returning();
+
+	const insertedGenreToGamePromise = db
+		.insert(genresToGames)
+		.values(genreToGameInserts)
+		.returning();
+
 	// Wait for all the promises to resolve.
 	// TODO: Handle errors.
 	const [
@@ -95,11 +122,15 @@ app.post("/", async (c) => {
 		insertedCovers,
 		insertedArtworks,
 		insertedScreenshots,
+		insertedGenres,
+		insertedGenreToGames,
 	] = await Promise.all([
 		insertedGamesPromise,
 		insertedCoversPromise,
 		insertedArtworksPromise,
 		insertedScreenshotsPromise,
+		insertedGenresPromise,
+		insertedGenreToGamePromise,
 	]);
 
 	return c.json({
@@ -108,6 +139,8 @@ app.post("/", async (c) => {
 		insertedCovers,
 		insertedArtworks,
 		insertedScreenshots,
+		insertedGenres,
+		insertedGenreToGames,
 	});
 });
 
@@ -141,8 +174,14 @@ app.post("/:gameId", async (c) => {
 		return c.json({ error: e }, 500);
 	}
 
-	const [gameInsert, coverInsert, artworkInsert, screenshotInsert] =
-		createDbInserts(validGame);
+	const [
+		gameInsert,
+		coverInsert,
+		artworkInsert,
+		screenshotInsert,
+		genreInsert,
+		genreToGameInsert,
+	] = createDbInserts(validGame);
 
 	let promises: Promise<any>[] = [];
 	let gameInsertPromise: Promise<any>;
@@ -183,6 +222,25 @@ app.post("/:gameId", async (c) => {
 			.onConflictDoNothing({ target: screenshots.imageId })
 			.returning();
 		promises.push(screenshotInsertPromise);
+	}
+
+	let genreInsertPromise: Promise<any>;
+	if (genreInsert.length > 0) {
+		genreInsertPromise = db
+			.insert(genres)
+			.values(genreInsert)
+			.onConflictDoNothing({ target: genres.id })
+			.returning();
+		promises.push(genreInsertPromise);
+	}
+
+	let genreToGameInsertPromise: Promise<any>;
+	if (genreToGameInsert.length > 0) {
+		genreToGameInsertPromise = db
+			.insert(genresToGames)
+			.values(genreToGameInsert)
+			.returning();
+		promises.push(genreToGameInsertPromise);
 	}
 
 	const results = await Promise.all(promises);

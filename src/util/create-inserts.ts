@@ -2,6 +2,8 @@ import {
 	ArtworkInsert,
 	CoverInsert,
 	GameInsert,
+	GenreInsert,
+	GenreToGameInsert,
 	ScreenshotInsert,
 } from "../db/schema/games";
 import { IGDBGame } from "../types/games";
@@ -9,10 +11,19 @@ import { uuidv4 } from "./generate-uuid";
 
 export const createDbInserts = (
 	validGame: IGDBGame,
-): [GameInsert, CoverInsert[], ArtworkInsert[], ScreenshotInsert[]] => {
+): [
+	GameInsert,
+	CoverInsert[],
+	ArtworkInsert[],
+	ScreenshotInsert[],
+	GenreInsert[],
+	GenreToGameInsert[],
+] => {
 	const coverInsert: CoverInsert[] = [];
 	const artworkInsert: ArtworkInsert[] = [];
 	const screenshotInsert: ScreenshotInsert[] = [];
+	const genreInsert: GenreInsert[] = [];
+	const genreToGameInsert: GenreToGameInsert[] = [];
 	let gameInsert: GameInsert = {
 		id: `game_${uuidv4()}`,
 		title: validGame.name,
@@ -73,5 +84,26 @@ export const createDbInserts = (
 		});
 	}
 
-	return [gameInsert, coverInsert, artworkInsert, screenshotInsert];
+	if (validGame.genres) {
+		validGame.genres.forEach((genre) => {
+			genreInsert.push({
+				id: genre.id,
+				name: genre.name,
+			});
+
+			genreToGameInsert.push({
+				gameId: validGame.id,
+				genreId: genre.id,
+			});
+		});
+	}
+
+	return [
+		gameInsert,
+		coverInsert,
+		artworkInsert,
+		screenshotInsert,
+		genreInsert,
+		genreToGameInsert,
+	];
 };

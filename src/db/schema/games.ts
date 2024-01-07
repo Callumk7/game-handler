@@ -120,3 +120,9 @@ export type ArtworkInsert = typeof artworks.$inferInsert;
 
 export type Screenshot = typeof screenshots.$inferSelect;
 export type ScreenshotInsert = typeof screenshots.$inferInsert;
+
+export type Genre = typeof genres.$inferSelect;
+export type GenreInsert = typeof genres.$inferInsert;
+
+export type GenreToGame = typeof genresToGames.$inferSelect;
+export type GenreToGameInsert = typeof genresToGames.$inferInsert;
