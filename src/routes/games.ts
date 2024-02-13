@@ -113,6 +113,7 @@ app.post("/", async (c) => {
 	const insertedGenreToGamePromise = db
 		.insert(genresToGames)
 		.values(genreToGameInserts)
+		.onConflictDoNothing()
 		.returning();
 
 	// Wait for all the promises to resolve.
@@ -239,6 +240,7 @@ app.post("/:gameId", async (c) => {
 		genreToGameInsertPromise = db
 			.insert(genresToGames)
 			.values(genreToGameInsert)
+			.onConflictDoNothing()
 			.returning();
 		promises.push(genreToGameInsertPromise);
 	}
