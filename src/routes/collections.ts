@@ -2,8 +2,8 @@ import { Hono } from "hono";
 import { Bindings } from "../types/bindings";
 import { zx } from "zodix";
 import { z } from "zod";
-import { usersToGames } from "../db/schema/users";
 import { drizzleClient } from "../db";
+import { usersToGames } from "@/db/schema/games";
 
 const app = new Hono<{ Bindings: Bindings }>();
 

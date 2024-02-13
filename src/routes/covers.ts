@@ -5,7 +5,7 @@ import { covers } from "../db/schema/games";
 import { uuidv4 } from "../util/generate-uuid";
 import { Bindings } from "../types/bindings";
 import { fetchGamesFromIGDB } from "../util/igdb-fetch";
-import { IGDBGameSchema } from "../types/games";
+import { IGDBGameSchema } from "@/types/igdb";
 
 const app = new Hono<{ Bindings: Bindings }>();
 

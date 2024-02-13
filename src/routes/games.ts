@@ -4,8 +4,22 @@ import { drizzleClient } from "../db";
 import { fetchGamesFromIGDB } from "../util/igdb-fetch";
 import { createDbInserts } from "../util/create-inserts";
 import { IGDBGame, IGDBGameSchema } from "@/types/igdb";
-import { InsertArtwork, InsertCover, InsertGame, InsertGenre, InsertGenreToGames, InsertScreenshot } from "@/types/games";
-import { artworks, covers, games, genres, genresToGames, screenshots } from "@/db/schema/games";
+import {
+	InsertArtwork,
+	InsertCover,
+	InsertGame,
+	InsertGenre,
+	InsertGenreToGames,
+	InsertScreenshot,
+} from "@/types/games";
+import {
+	artworks,
+	covers,
+	games,
+	genres,
+	genresToGames,
+	screenshots,
+} from "@/db/schema/games";
 import { returnErrorIfNotArray } from "@/util/validation";
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -31,7 +45,7 @@ app.post("/", async (c) => {
 			invalidGames.push(game);
 			console.error(e);
 		}
-	};
+	}
 
 	// How are we going to handle the presence of invalid games?
 	// We can return an error for the entire request, or process the rest of the valid games,

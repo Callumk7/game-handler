@@ -5,6 +5,7 @@ import { Bindings } from "./types/bindings";
 import playlistsRoute from "./routes/playlists";
 import gamesRoute from "./routes/games";
 import coversRoute from "./routes/covers";
+import activityRoute from "./routes/activity";
 
 const app = new Hono<{ Bindings: Bindings }>();
 app.use("/*", cors());
@@ -18,5 +19,8 @@ app.route("/games", gamesRoute);
 
 // COVERS
 app.route("/covers", coversRoute);
+
+// ACTIVITY
+app.route("/activity", activityRoute);
 
 export default app;

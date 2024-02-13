@@ -1,8 +1,13 @@
-import { followers, gamesOnPlaylists, playlistComments, playlists } from "db/schema/playlists";
+import {
+	followers,
+	gamesOnPlaylists,
+	playlistComments,
+	playlists,
+} from "@/db/schema/playlists";
 import { createSelectSchema, createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { GameWithCover } from "./games";
-import { User } from ".";
+import { User } from "./users";
 
 export const playlistsSelectSchema = createSelectSchema(playlists);
 export const playlistsInsertSchema = createInsertSchema(playlists);
@@ -42,4 +47,4 @@ export type PlaylistWithFollowers = Playlist & {
 
 export type PlaylistCommentsWithAuthor = PlaylistComment & {
 	author: User;
-}
+};
