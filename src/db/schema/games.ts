@@ -3,11 +3,13 @@ import {
 	boolean,
 	integer,
 	pgTable,
+	primaryKey,
 	text,
 	timestamp,
 } from "drizzle-orm/pg-core";
-import { usersToGames } from "./users";
 import { gamesOnPlaylists } from "./playlists";
+import { users } from "./users";
+import { activity } from "./activity";
 
 export const games = pgTable("games", {
 	id: text("id").primaryKey(),
@@ -35,6 +37,7 @@ export const gamesRelations = relations(games, ({ one, many }) => ({
 	users: many(usersToGames),
 	playlists: many(gamesOnPlaylists),
 	genres: many(genresToGames),
+	activity: many(activity),
 }));
 
 export const covers = pgTable("covers", {
@@ -90,13 +93,20 @@ export const genresRelations = relations(genres, ({ many }) => ({
 	games: many(genresToGames),
 }));
 
-export const genresToGames = pgTable("genres_to_games", {
-	genreId: integer("genre_id").notNull(),
-	gameId: integer("game_id").notNull(),
-	createdAt: timestamp("created_at").notNull().defaultNow(),
-	updatedAt: timestamp("updated_at").notNull().defaultNow(),
-	isUpdated: boolean("is_updated").default(false),
-});
+export const genresToGames = pgTable(
+	"genres_to_games",
+	{
+		genreId: integer("genre_id").notNull(),
+		gameId: integer("game_id").notNull(),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+		updatedAt: timestamp("updated_at").notNull().defaultNow(),
+		isUpdated: boolean("is_updated").default(false),
+	},
+
+	(t) => ({
+		pk: primaryKey({ columns: [t.genreId, t.gameId] }),
+	}),
+);
 
 export const genresToGamesRelations = relations(genresToGames, ({ one }) => ({
 	genre: one(genres, {
@@ -109,20 +119,31 @@ export const genresToGamesRelations = relations(genresToGames, ({ one }) => ({
 	}),
 }));
 
-export type Game = typeof games.$inferSelect;
-export type GameInsert = typeof games.$inferInsert;
+export const usersToGames = pgTable(
+	"users_to_games",
+	{
+		userId: text("user_id").notNull(),
+		gameId: integer("game_id").notNull(),
+		createdAt: timestamp("created_at").notNull().defaultNow(),
+		updatedAt: timestamp("updated_at").notNull().defaultNow(),
+		isUpdated: boolean("is_updated").default(false),
+		played: boolean("played").default(false).notNull(),
+		playerRating: integer("player_rating"),
+		completed: boolean("completed").default(false).notNull(),
+		position: integer("position"),
+	},
+	(t) => ({
+		pk: primaryKey({ columns: [t.userId, t.gameId] }),
+	}),
+);
 
-export type Cover = typeof covers.$inferSelect;
-export type CoverInsert = typeof covers.$inferInsert;
-
-export type Artwork = typeof artworks.$inferSelect;
-export type ArtworkInsert = typeof artworks.$inferInsert;
-
-export type Screenshot = typeof screenshots.$inferSelect;
-export type ScreenshotInsert = typeof screenshots.$inferInsert;
-
-export type Genre = typeof genres.$inferSelect;
-export type GenreInsert = typeof genres.$inferInsert;
-
-export type GenreToGame = typeof genresToGames.$inferSelect;
-export type GenreToGameInsert = typeof genresToGames.$inferInsert;
+export const usersToGamesRelations = relations(usersToGames, ({ one }) => ({
+	user: one(users, {
+		fields: [usersToGames.userId],
+		references: [users.id],
+	}),
+	game: one(games, {
+		fields: [usersToGames.gameId],
+		references: [games.gameId],
+	}),
+}));
