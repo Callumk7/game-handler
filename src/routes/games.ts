@@ -1,23 +1,12 @@
 import { Hono } from "hono";
 import { Bindings } from "../types/bindings";
 import { drizzleClient } from "../db";
-import { IGDBGame, IGDBGameSchema } from "../types/games";
-import {
-	ArtworkInsert,
-	CoverInsert,
-	GameInsert,
-	GenreInsert,
-	GenreToGameInsert,
-	ScreenshotInsert,
-	artworks,
-	covers,
-	games,
-	genres,
-	genresToGames,
-	screenshots,
-} from "../db/schema/games";
 import { fetchGamesFromIGDB } from "../util/igdb-fetch";
 import { createDbInserts } from "../util/create-inserts";
+import { IGDBGame, IGDBGameSchema } from "@/types/igdb";
+import { InsertArtwork, InsertCover, InsertGame, InsertGenre, InsertGenreToGames, InsertScreenshot } from "@/types/games";
+import { artworks, covers, games, genres, genresToGames, screenshots } from "@/db/schema/games";
+import { returnErrorIfNotArray } from "@/util/validation";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -30,36 +19,31 @@ app.post("/", async (c) => {
 
 	// Parse the body and see what we are dealing with.
 	const json = await c.req.json();
-	if (!Array.isArray(json)) {
-		return c.json(
-			{ error: "Invalid JSON body. Body must be an array." },
-			400,
-		);
-	}
+	returnErrorIfNotArray(json, c);
 
 	// Check each item in the array. We should push all correct items to a new array.
 	const validGames: IGDBGame[] = [];
 	const invalidGames: any[] = [];
-	json.forEach((game) => {
+	for (const game of json) {
 		try {
 			validGames.push(IGDBGameSchema.parse(game));
 		} catch (e) {
 			invalidGames.push(game);
 			console.error(e);
 		}
-	});
+	};
 
 	// How are we going to handle the presence of invalid games?
 	// We can return an error for the entire request, or process the rest of the valid games,
 	// and return the invalid games in the response.
 
 	// Insert the valid games into the database.
-	const coverInserts: CoverInsert[] = [];
-	const artworkInserts: ArtworkInsert[] = [];
-	const screenshotInserts: ScreenshotInsert[] = [];
-	const genreInserts: GenreInsert[] = [];
-	const genreToGameInserts: GenreToGameInsert[] = [];
-	const gameInserts: GameInsert[] = [];
+	const coverInserts: InsertCover[] = [];
+	const artworkInserts: InsertArtwork[] = [];
+	const screenshotInserts: InsertScreenshot[] = [];
+	const genreInserts: InsertGenre[] = [];
+	const genreToGameInserts: InsertGenreToGames[] = [];
+	const gameInserts: InsertGame[] = [];
 	validGames.map((game) => {
 		const [
 			gameInsert,

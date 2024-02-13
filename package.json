@@ -5,12 +5,14 @@
   },
   "dependencies": {
     "drizzle-orm": "^0.28.6",
+    "drizzle-zod": "^0.5.1",
     "hono": "^3.11.7",
     "postgres": "^3.4.3",
     "zod": "^3.22.4",
     "zodix": "^0.4.4"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.5.3",
     "@cloudflare/workers-types": "^4.20230914.0",
     "wrangler": "^3.15.0"
   }

@@ -1,63 +1,70 @@
+import {
+	games,
+	covers,
+	artworks,
+	screenshots,
+	genres,
+	usersToGames,
+    genresToGames,
+} from "@/db/schema/games";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
+import { playlistsSelectSchema } from "./playlists";
 
-const genreType = z.object({
-	id: z.number(),
-	name: z.string(),
+export const gamesInsertSchema = createInsertSchema(games);
+export const gamesSelectSchema = createSelectSchema(games);
+
+export const insertUsersToGamesSchema = createInsertSchema(usersToGames);
+export const selectUsersToGamesSchema = createSelectSchema(usersToGames);
+
+export const coversInsertSchema = createInsertSchema(covers);
+export const coversSelectSchema = createSelectSchema(covers);
+
+export const artworksInsertSchema = createInsertSchema(artworks);
+export const artworksSelectSchema = createSelectSchema(artworks);
+
+export const screenshotsInsertSchema = createInsertSchema(screenshots);
+export const screenshotsSelectSchema = createSelectSchema(screenshots);
+
+export const genresInsertSchema = createInsertSchema(genres);
+export const genresSelectSchema = createSelectSchema(genres);
+
+export const genresToGamesInsertSchema = createInsertSchema(genresToGames);
+export const genresToGamesSelectSchema = createSelectSchema(genresToGames);
+
+export type Game = z.infer<typeof gamesSelectSchema>;
+export type Cover = z.infer<typeof coversSelectSchema>;
+export type Artwork = z.infer<typeof artworksSelectSchema>;
+export type Screenshot = z.infer<typeof screenshotsSelectSchema>;
+export type Genre = z.infer<typeof genresSelectSchema>;
+export type GenreToGames = z.infer<typeof genresSelectSchema>;
+export type UsersToGames = z.infer<typeof selectUsersToGamesSchema>;
+
+export type InsertGame = z.infer<typeof gamesInsertSchema>;
+export type InsertCover = z.infer<typeof coversInsertSchema>;
+export type InsertArtwork = z.infer<typeof artworksInsertSchema>;
+export type InsertScreenshot = z.infer<typeof screenshotsInsertSchema>;
+export type InsertGenre = z.infer<typeof genresInsertSchema>;
+export type InsertGenreToGames = z.infer<typeof genresToGamesInsertSchema>;
+export type InsertUsersToGames = z.infer<typeof insertUsersToGamesSchema>;
+
+export type GameWithCover = Game & { cover: Cover };
+export type CollectionWithGame = UsersToGames & { game: GameWithCover };
+
+///
+/// Shape the data for the client
+///
+export const gameWithCollectionSchema = gamesSelectSchema.extend({
+	cover: coversSelectSchema,
+	genres: z.array(genresSelectSchema),
+	screenshots: z.array(screenshotsSelectSchema),
+	artworks: z.array(artworksSelectSchema),
+	playlists: z.array(playlistsSelectSchema),
+	played: z.boolean(),
+	playerRating: z.number().nullable(),
+	completed: z.boolean().nullable(),
+	position: z.number().nullable(),
+	dateAdded: z.date(),
 });
 
-const screenshotType = z.object({
-	id: z.number(),
-	image_id: z.string(),
-});
-
-const artworkType = z.object({
-	id: z.number(),
-	image_id: z.string(),
-});
-
-export const CoverType = z.object({
-	id: z.number(),
-	image_id: z.string(),
-});
-
-// Considering just using the one schema for all IGDB responses,
-// but later I can remove some fields and create purpose made
-// schemas for each  response.
-export const IGDBGameSchema = z.object({
-	id: z.number(),
-	genres: z.array(genreType).optional(),
-	name: z.string(),
-	cover: CoverType,
-	storyline: z.string().optional(),
-	screenshots: z.array(screenshotType).optional(),
-	artworks: z.array(artworkType).optional(),
-	follows: z.number().optional(),
-	rating: z.number().optional(),
-	aggregated_rating: z.number().optional(),
-	aggregated_rating_count: z.number().optional(),
-	involved_companies: z.array(z.number()).optional(),
-	first_release_date: z.number().optional(),
-});
-
-export const IGDBGameNoArtworkSchema = IGDBGameSchema.omit({
-	artworks: true,
-	screenshots: true,
-});
-
-export const IGDBGameSchemaArray = z.array(IGDBGameSchema);
-export const IGDBGameNoArtworkSchemaArray = z.array(IGDBGameNoArtworkSchema);
-
-export type IGDBGame = z.infer<typeof IGDBGameSchema>;
-export type IGDBGameNoArtwork = z.infer<typeof IGDBGameNoArtworkSchema>;
-
-export type IGDBImage =
-	| "cover_small"
-	| "screenshot_med"
-	| "cover_big"
-	| "logo_med"
-	| "screenshot_big"
-	| "screenshot_huge"
-	| "thumb"
-	| "micro"
-	| "720p"
-	| "1080p";
+export type GameWithCollection = z.infer<typeof gameWithCollectionSchema>;
