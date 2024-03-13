@@ -29,9 +29,8 @@ app.post("/", async (c) => {
 		return c.json({
 			success: savedGame,
 		});
-	} else {
-		return c.json({
-			error: formData.error,
-		});
 	}
+	return c.json({
+		error: formData.error,
+	});
 });

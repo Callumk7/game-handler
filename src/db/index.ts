@@ -10,3 +10,5 @@ export const drizzleClient = (DATABASE_URL: string) => {
 		schema: { ...usersSchema, ...gamesSchema, ...playlistsSchema },
 	});
 };
+
+export type Drizzle = ReturnType<typeof drizzleClient>;
