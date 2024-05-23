@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import { Bindings } from "../types/bindings";
+import type { Bindings } from "../types/bindings";
 import { drizzleClient } from "../db";
 import { fetchGamesFromIGDB } from "../util/igdb-fetch";
 import { createDbInserts } from "../util/create-inserts";
-import { IGDBGame, IGDBGameSchema } from "@/types/igdb";
-import {
+import { type IGDBGame, IGDBGameSchema } from "@/types/igdb";
+import type {
 	InsertArtwork,
 	InsertCover,
 	InsertGame,

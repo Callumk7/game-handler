@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { Bindings } from "./types/bindings";
+import type { Bindings } from "./types/bindings";
 
 import playlistsRoute from "./routes/playlists";
 import gamesRoute from "./routes/games";
